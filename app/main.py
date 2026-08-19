@@ -1,19 +1,20 @@
 import sys
 
+from app.analysis.test_runner import TestRunner
 from app.repository.scanner import RepositoryScanner
 
 
-def print_result(result: dict):
-    """Print repository scan results."""
+def print_scan_result(result: dict):
+    """Print repository scanning results."""
 
     print("\nRepoMedic - Repository Scan")
     print("=" * 40)
 
     print(f"Repository: {result['repository']}")
     print(f"Python files scanned: {result['files_scanned']}")
-    print(f"Errors found: {result['errors_found']}")
+    print(f"Syntax errors found: {result['errors_found']}")
 
-    print("\nResults")
+    print("\nFile Results")
     print("-" * 40)
 
     for file_result in result["results"]:
@@ -35,6 +36,26 @@ def print_result(result: dict):
                 )
 
 
+def print_test_result(result: dict):
+    """Print test execution results."""
+
+    print("\nTest Execution")
+    print("=" * 40)
+
+    print(f"Status: {result['status']}")
+    print(f"Exit code: {result['exit_code']}")
+
+    if result["stdout"]:
+        print("\nSTDOUT")
+        print("-" * 40)
+        print(result["stdout"])
+
+    if result["stderr"]:
+        print("\nSTDERR")
+        print("-" * 40)
+        print(result["stderr"])
+
+
 def main():
     if len(sys.argv) != 2:
         print(
@@ -47,15 +68,23 @@ def main():
     scanner = RepositoryScanner()
 
     try:
-        result = scanner.scan(repository_path)
+        scan_result = scanner.scan(repository_path)
 
     except (FileNotFoundError, NotADirectoryError) as error:
         print(f"Error: {error}")
         sys.exit(1)
 
-    print_result(result)
+    print_scan_result(scan_result)
 
-    if result["errors_found"] > 0:
+    runner = TestRunner()
+    test_result = runner.run(repository_path)
+
+    print_test_result(test_result)
+
+    if (
+        scan_result["errors_found"] > 0
+        or not test_result["success"]
+    ):
         sys.exit(1)
 
 
