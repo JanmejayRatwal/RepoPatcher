@@ -4,6 +4,21 @@ from pathlib import Path
 
 class SymbolIndex:
     """Build an index of Python functions and classes in a repository."""
+    
+    def find_symbol( self,
+        symbols: list[dict],
+        name: str,
+     ) -> list[dict]:
+        """Find symbols by name."""
+
+        return [
+            symbol
+            for symbol in symbols
+            if symbol["name"] == name
+        ]
+        
+        
+    
 
     def build(self, repository_path: str) -> dict:
         repository = Path(repository_path)
@@ -73,8 +88,24 @@ class SymbolIndex:
         return {
             "success": True,
             "symbols": symbols,
-        }
+         }
         
+        
+        
+        
+def find_symbol(
+    self,
+    symbols: list[dict],
+    name: str,
+) -> list[dict]:
+    """Find symbols by name."""
+
+    return [
+        symbol
+        for symbol in symbols
+        if symbol["name"] == name
+    ]
+    
 def find_symbol(
     self,
     symbols: list[dict],
