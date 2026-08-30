@@ -44,7 +44,7 @@ class OllamaController:
         try:
             with urllib.request.urlopen(
                 request,
-                timeout=120,
+                timeout=180,
             ) as response:
 
                 response_data = json.loads(

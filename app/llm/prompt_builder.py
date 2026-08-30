@@ -8,7 +8,7 @@ class PromptBuilder:
         self,
         context: dict,
     ) -> str:
-        """Build a prompt for analysing a repository error."""
+        """Build a focused prompt for analysing a repository error."""
 
         context_json = json.dumps(
             context,
@@ -16,49 +16,40 @@ class PromptBuilder:
             ensure_ascii=False,
         )
 
-        return f"""
-            You are the local analysis controller for RepoPatcher.
+        return f"""You are RepoPatcher's local code analysis controller.
 
-            Your task is to analyse a software error using ONLY
-            the repository context provided below.
+                Analyze the software error using ONLY the repository context below.
 
-            Do not modify code.
-            Do not invent files or code that are not present
-            in the provided context.
-
-            Determine:
-
-            1. What the error is.
-            2. Which part of the code is most likely responsible.
-            3. Whether related imported code may be involved.
-            4. What additional information would be useful before
-               attempting a repair.
-            qwen2.5-coder:14b 
-            Do not generate a final patch yet.
-            
-            Repository context:
-            
-            ```json
-            {context_json}
-            Return ONLY valid JSON.
-           
-           Use exactly this structure:
-           
-           {{
-             "analysis": "concise explanation of the error",
-             "suspected_cause": "most likely cause",
-             "confidence": 0.0,
-             "relevant_symbols": [],
-             "repair_requirements": []
-           }}
-           
-           Rules:
-           
-           - confidence must be a number between 0 and 1.
-           - relevant_symbols must be a JSON array.
-           - repair_requirements must be a JSON array.
-           - Do not include Markdown.
-           - Do not include ```json.
-           - Do not generate a patch.
-           - Do not invent repository information.
-            """.strip()
+                Your job:
+                1. Identify the error.
+                2. Identify the most likely responsible code.
+                3. Consider related imported code.
+                4. State what is required before a repair can be generated.
+                
+                Do NOT:
+                - modify code
+                - invent files, symbols, or code
+                - include Markdown
+                - include explanations outside JSON
+                
+                Do not generate a final patch yet.
+                
+                Return ONLY valid JSON using exactly this structure:
+                
+                {{
+                  "analysis": "concise explanation of the error",
+                  "suspected_cause": "most likely cause",
+                  "confidence": 0.0,
+                  "relevant_symbols": [],
+                  "repair_requirements": []
+                }}
+                
+                Rules:
+                - confidence must be between 0 and 1.
+                - relevant_symbols must be an array.
+                - repair_requirements must be an array.
+                - Use only information present in the repository context.
+                
+                Repository context:
+                {context_json}
+                """.strip()

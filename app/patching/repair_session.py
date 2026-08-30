@@ -1,4 +1,5 @@
 from app.patching.repair_workflow import RepairWorkflow
+from app.patching.attempt_history import RepairAttemptHistory
 
 
 class RepairSession:
@@ -30,6 +31,13 @@ class RepairSession:
 
         attempts = []
 
+        # One shared history for the entire repair session.
+        history = RepairAttemptHistory()
+
+        # Inject the session-level history into the workflow.
+        if hasattr(self.repair_workflow, "attempt_history"):
+            self.repair_workflow.attempt_history = history
+
         for attempt_number in range(1, self.max_attempts + 1):
 
             result = self.repair_workflow.run(
@@ -50,6 +58,7 @@ class RepairSession:
                     "status": "repair_completed",
                     "attempt_count": attempt_number,
                     "attempts": attempts,
+                    "history": history.get_all(),
                     "final_result": result,
                 }
 
@@ -65,6 +74,7 @@ class RepairSession:
                     "status": "repair_stopped",
                     "attempt_count": attempt_number,
                     "attempts": attempts,
+                    "history": history.get_all(),
                     "final_result": result,
                 }
 
@@ -78,6 +88,7 @@ class RepairSession:
                     "status": "repair_stopped",
                     "attempt_count": attempt_number,
                     "attempts": attempts,
+                    "history": history.get_all(),
                     "final_result": result,
                 }
 
@@ -90,5 +101,6 @@ class RepairSession:
             "status": "maximum_attempts_reached",
             "attempt_count": self.max_attempts,
             "attempts": attempts,
+            "history": history.get_all(),
             "final_result": attempts[-1],
         }

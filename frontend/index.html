@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RepoPatcher</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>RepoPatcher</h1>
+        <p>AI-powered repository error detection and repair</p>
+    </header>
+
+    <section class="card">
+        <h2>Repository</h2>
+
+        <div class="input-row">
+            <input
+                id="repositoryPath"
+                type="text"
+                placeholder="./sample"
+                value="./sample"
+            >
+
+            <button id="repairButton" onclick="repairRepository()">
+                Repair Repository
+            </button>
+        </div>
+
+        <p id="status" class="status">Ready</p>
+    </section>
+
+    <section class="card">
+        <h2>Repair Pipeline</h2>
+
+        <div class="pipeline">
+            <div id="step-scan">○ Repository Scan</div>
+            <div id="step-test">○ Test Execution</div>
+            <div id="step-analysis">○ LLM Analysis</div>
+            <div id="step-repair">○ Patch Generation</div>
+            <div id="step-verify">○ Verification</div>
+        </div>
+    </section>
+
+    <section id="failureCard" class="card hidden">
+        <h2>Detected Failure</h2>
+
+        <pre id="failure"></pre>
+    </section>
+
+    <section id="analysisCard" class="card hidden">
+        <h2>AI Analysis</h2>
+
+        <div class="analysis">
+            <p><strong>Analysis</strong></p>
+            <p id="analysis"></p>
+
+            <p><strong>Suspected Cause</strong></p>
+            <p id="cause"></p>
+
+            <p><strong>Confidence</strong></p>
+            <p id="confidence"></p>
+        </div>
+    </section>
+
+    <section id="repairCard" class="card hidden">
+        <h2>Generated Repair</h2>
+
+        <p>
+            <strong>File:</strong>
+            <span id="repairFile"></span>
+        </p>
+
+        <p>
+            <strong>Target:</strong>
+            <span id="repairTarget"></span>
+        </p>
+
+        <div class="diff">
+            <div class="removed" id="original"></div>
+            <div class="added" id="replacement"></div>
+        </div>
+
+        <p>
+            <strong>Reason</strong>
+        </p>
+
+        <p id="reason"></p>
+    </section>
+
+    <section id="resultCard" class="card hidden">
+        <h2>Verification Result</h2>
+
+        <div id="result"></div>
+    </section>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

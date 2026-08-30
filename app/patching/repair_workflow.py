@@ -16,6 +16,7 @@ class RepairWorkflow:
         patch_validator=None,
         patch_applier=None,
         repair_verifier=None,
+        attempt_history=None,
     ):
         self.repair_generator = (
             repair_generator
@@ -44,6 +45,12 @@ class RepairWorkflow:
         self.failure_analyzer = FailureAnalyzer()
         self.retry_policy = RetryPolicy()
 
+        self.attempt_history = (
+            attempt_history
+            if attempt_history is not None
+            else RepairAttemptHistory()
+        )
+
     def run(
         self,
         repository_path: str,
@@ -52,7 +59,10 @@ class RepairWorkflow:
     ) -> dict:
         """Execute one complete repair attempt."""
 
-        history = RepairAttemptHistory()
+        history = self.attempt_history
+
+        # The attempt currently being executed.
+        attempt_count = history.count() + 1
 
         # --------------------------------------------------
         # 1. Generate repair
@@ -160,7 +170,7 @@ class RepairWorkflow:
             )
 
             retry_decision = self.retry_policy.should_retry(
-                attempt_count=1,
+                attempt_count=attempt_count,
                 failure=failure,
             )
 
