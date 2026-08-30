@@ -3,6 +3,8 @@ from app.patching.patch_validator import PatchValidator
 from app.patching.patch_applier import PatchApplier
 from app.patching.repair_verifier import RepairVerifier
 from app.patching.attempt_history import RepairAttemptHistory
+from app.analysis.failure_analyzer import FailureAnalyzer
+from app.patching.retry_policy import RetryPolicy
 
 
 class RepairWorkflow:
@@ -39,13 +41,16 @@ class RepairWorkflow:
             else RepairVerifier()
         )
 
+        self.failure_analyzer = FailureAnalyzer()
+        self.retry_policy = RetryPolicy()
+
     def run(
         self,
         repository_path: str,
         context: dict,
         analysis: dict,
     ) -> dict:
-        """Execute the complete repair workflow."""
+        """Execute one complete repair attempt."""
 
         history = RepairAttemptHistory()
 
@@ -143,7 +148,24 @@ class RepairWorkflow:
         )
 
         # --------------------------------------------------
-        # 5. Record attempt
+        # 5. Analyze verification failure
+        # --------------------------------------------------
+
+        failure = None
+        retry_decision = None
+
+        if not verification.get("verified", False):
+            failure = self.failure_analyzer.analyze(
+                verification
+            )
+
+            retry_decision = self.retry_policy.should_retry(
+                attempt_count=1,
+                failure=failure,
+            )
+
+        # --------------------------------------------------
+        # 6. Record repair attempt
         # --------------------------------------------------
 
         attempt = history.record(
@@ -151,10 +173,11 @@ class RepairWorkflow:
             validation=validation,
             application=application,
             verification=verification,
+            failure=failure,
         )
 
         # --------------------------------------------------
-        # 6. Return workflow result
+        # 7. Return workflow result
         # --------------------------------------------------
 
         return {
@@ -164,6 +187,8 @@ class RepairWorkflow:
             "validation": validation,
             "application": application,
             "verification": verification,
+            "failure": failure,
+            "retry_decision": retry_decision,
             "attempt": attempt,
             "history": history.get_all(),
         }

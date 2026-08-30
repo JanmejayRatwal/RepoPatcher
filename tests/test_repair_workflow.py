@@ -135,3 +135,76 @@ def test_workflow_stops_when_validation_fails():
 
     assert result["success"] is False
     assert result["stage"] == "patch_validation"
+
+
+def test_workflow_records_successful_attempt():
+
+    workflow = RepairWorkflow(
+        repair_generator=FakeRepairGenerator(),
+        patch_validator=FakePatchValidator(),
+        patch_applier=FakePatchApplier(),
+        repair_verifier=FakeRepairVerifier(),
+    )
+
+    result = workflow.run(
+        repository_path="/fake/repository",
+        context={"error": "calculator failure"},
+        analysis={
+            "analysis": "Wrong operator.",
+        },
+    )
+
+    assert "attempt" in result
+    assert "history" in result
+
+    assert result["attempt"]["attempt_number"] == 1
+    assert len(result["history"]) == 1
+
+    assert result["history"][0]["attempt_number"] == 1
+
+
+def test_workflow_analyzes_failed_verification():
+
+    class FailedRepairVerifier:
+
+        def verify(self, repository_path):
+            return {
+                "success": False,
+                "verified": False,
+                "status": "repair_failed",
+                "test_result": {
+                    "success": False,
+                    "status": "failed",
+                    "exit_code": 1,
+                    "stdout": "1 failed",
+                    "stderr": "",
+                },
+            }
+
+    workflow = RepairWorkflow(
+        repair_generator=FakeRepairGenerator(),
+        patch_validator=FakePatchValidator(),
+        patch_applier=FakePatchApplier(),
+        repair_verifier=FailedRepairVerifier(),
+    )
+
+    result = workflow.run(
+        repository_path="/fake/repository",
+        context={"error": "calculator failure"},
+        analysis={
+            "analysis": "Wrong operator.",
+        },
+    )
+
+    assert result["success"] is False
+    assert result["stage"] == "verification"
+
+    assert result["failure"] is not None
+    assert result["failure"]["category"] == "test_failure"
+    assert result["failure"]["retryable"] is True
+
+    assert result["retry_decision"] is not None
+    assert result["retry_decision"]["retry"] is True
+
+    assert result["attempt"]["attempt_number"] == 1
+    assert len(result["history"]) == 1
