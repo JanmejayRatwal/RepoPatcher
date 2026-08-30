@@ -2,6 +2,7 @@ from app.llm.repair_generator import RepairGenerator
 from app.patching.patch_validator import PatchValidator
 from app.patching.patch_applier import PatchApplier
 from app.patching.repair_verifier import RepairVerifier
+from app.patching.attempt_history import RepairAttemptHistory
 
 
 class RepairWorkflow:
@@ -46,6 +47,8 @@ class RepairWorkflow:
     ) -> dict:
         """Execute the complete repair workflow."""
 
+        history = RepairAttemptHistory()
+
         # --------------------------------------------------
         # 1. Generate repair
         # --------------------------------------------------
@@ -56,10 +59,20 @@ class RepairWorkflow:
         )
 
         if not generation["success"]:
+            attempt = history.record(
+                repair={},
+                failure={
+                    "category": "repair_generation",
+                    "error": generation["error"],
+                },
+            )
+
             return {
                 "success": False,
                 "stage": "repair_generation",
                 "error": generation["error"],
+                "attempt": attempt,
+                "history": history.get_all(),
             }
 
         repair = generation["repair"]
@@ -74,11 +87,22 @@ class RepairWorkflow:
         )
 
         if not validation["valid"]:
+            attempt = history.record(
+                repair=repair,
+                validation=validation,
+                failure={
+                    "category": "patch_validation",
+                    "error": validation["error"],
+                },
+            )
+
             return {
                 "success": False,
                 "stage": "patch_validation",
                 "error": validation["error"],
                 "repair": repair,
+                "attempt": attempt,
+                "history": history.get_all(),
             }
 
         # --------------------------------------------------
@@ -91,11 +115,23 @@ class RepairWorkflow:
         )
 
         if not application["success"]:
+            attempt = history.record(
+                repair=repair,
+                validation=validation,
+                application=application,
+                failure={
+                    "category": "patch_application",
+                    "error": application["error"],
+                },
+            )
+
             return {
                 "success": False,
                 "stage": "patch_application",
                 "error": application["error"],
                 "repair": repair,
+                "attempt": attempt,
+                "history": history.get_all(),
             }
 
         # --------------------------------------------------
@@ -106,11 +142,28 @@ class RepairWorkflow:
             repository_path
         )
 
+        # --------------------------------------------------
+        # 5. Record attempt
+        # --------------------------------------------------
+
+        attempt = history.record(
+            repair=repair,
+            validation=validation,
+            application=application,
+            verification=verification,
+        )
+
+        # --------------------------------------------------
+        # 6. Return workflow result
+        # --------------------------------------------------
+
         return {
-            "success": True,
+            "success": verification.get("verified", False),
             "stage": "verification",
             "repair": repair,
             "validation": validation,
             "application": application,
             "verification": verification,
+            "attempt": attempt,
+            "history": history.get_all(),
         }
